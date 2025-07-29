@@ -1,0 +1,43 @@
+app = 'book-review-api'
+primary_region = 'nrt'  # 일본 도쿄 (한국에서 가장 가까움)
+
+[env]
+  PORT = '8000'
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ['app']
+
+[[vm]]
+  memory = '1gb'
+  cpu_kind = 'shared'
+  cpus = 1
+
+[[statics]]
+  guest_path = '/code/static'
+  url_prefix = '/static/'
+
+[[services]]
+  internal_port = 8000
+  protocol = "tcp"
+
+  [[services.ports]]
+    port = 80
+    handlers = ["http"]
+
+  [[services.ports]]
+    port = 443
+    handlers = ["tls", "http"]
+
+  [services.health_check]
+    protocol = "http"
+    path = "/health"   # 앱에서 헬스 체크용 엔드포인트를 만들었으면 그 URL 경로로 맞춤
+    interval = 10000   # 10초 간격
+    timeout = 2000     # 2초 내 응답 없으면 실패로 간주
+    unhealthy_threshold = 3
+    healthy_threshold = 2
+

@@ -1,0 +1,27 @@
+# Python 관련
+__pycache__/
+*.py[cod]
+*$py.class
+
+# 가상환경
+venv/
+env/
+.venv/
+
+# 환경변수 파일
+.env
+
+# Django 관련
+*.sqlite3
+media/
+staticfiles/
+
+# IDE & 에디터 관련
+.vscode/
+.idea/
+
+# macOS 관련
+.DS_Store
+
+# 로그 파일
+*.log

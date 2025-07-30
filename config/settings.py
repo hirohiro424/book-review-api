@@ -43,7 +43,10 @@ SECURE_HSTS_PRELOAD = False
 
 DEBUG = config("DEBUG", cast=bool, default=False)
 
-ALLOWED_HOSTS = config("ALLOWED_HOSTS", default="*").split(",")
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '::1']
+
+
+AUTH_USER_MODEL = 'users.User'
 
 
 
@@ -59,7 +62,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'authors',
     'books',
-    'book_review',
+    'users',
     'reviews',
 ]
 

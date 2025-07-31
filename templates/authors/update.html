@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>✏️ 작가 수정</h2>
+
+<form id="update-author-form">
+  <input type="text" name="name" value="{{ author.name }}" required>
+  <button type="submit">수정 완료</button>
+</form>
+
+<script>
+const authorId = {{ author.id }};
+
+function getCSRFToken() {
+  return document.cookie.split('; ')
+    .find(row => row.startsWith('csrftoken='))
+    ?.split('=')[1];
+}
+
+document.getElementById('update-author-form').addEventListener('submit', function(e) {
+  e.preventDefault();
+
+  const name = this.name.value;
+
+  fetch(`/api/authors/${authorId}/`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': getCSRFToken()
+    },
+    body: JSON.stringify({ name })
+  })
+  .then(res => {
+    if (res.ok) {
+      alert('수정이 완료되었습니다.');
+      window.location.href = '/web/authors/';
+    } else {
+      res.json().then(data => {
+        alert('수정 실패: ' + JSON.stringify(data));
+      });
+    }
+  });
+});
+</script>
+{% endblock %}

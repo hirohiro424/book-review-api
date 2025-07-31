@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>📖 책 상세</h2>
+<div id="book-detail">불러오는 중...</div>
+
+<h3>💬 관련 리뷰</h3>
+<ul id="book-reviews">리뷰를 불러오는 중...</ul>
+
+{% if user.is_authenticated %}
+<h4>✍️ 리뷰 작성</h4>
+<form id="review-form">
+  <textarea name="content" rows="3" placeholder="내용"></textarea><br>
+  <input type="number" name="rating" min="1" max="10" placeholder="평점 (1~10)"><br>
+  <button type="submit">등록</button>
+</form>
+{% endif %}
+
+<script>
+function getCSRFToken() {
+  return document.cookie.split('; ')
+    .find(row => row.startsWith('csrftoken='))
+    ?.split('=')[1];
+}
+
+const bookId = {{ book_id }};
+const userId = {{ request.user.id|default:"null" }};
+
+fetch(`/api/books/${bookId}/`)
+  .then(res => res.json())
+  .then(data => {
+    fetch(`/api/authors/${data.author}/`)
+      .then(res => res.json())
+      .then(authorData => {
+        document.getElementById('book-detail').innerHTML = `
+          <b>제목:</b> ${data.title}<br>
+          <b>작가:</b> ${authorData.name}<br>
+        `;
+      });
+  });
+
+function loadReviews() {
+  fetch(`/api/books/${bookId}/reviews/`)
+    .then(res => res.json())
+    .then(data => {
+      const ul = document.getElementById('book-reviews');
+      ul.innerHTML = '';
+      data.forEach(r => {
+        const li = document.createElement('li');
+        li.innerHTML = `
+          <b>${r.user}</b>: ${r.content} <small>(${r.rating}/10)</small>
+          ${r.user === userId ? `
+            <a href="#">✏️ 수정</a>
+            <button onclick="deleteReview(${r.id})">🗑️ 삭제</button>
+          ` : ''}
+        `;
+        ul.appendChild(li);
+      });
+    });
+}
+
+function deleteReview(reviewId) {
+  if (!confirm("정말 삭제하시겠습니까?")) return;
+  fetch(`/api/reviews/${reviewId}/`, {
+    method: 'DELETE',
+    headers: {
+      'X-CSRFToken': getCSRFToken()
+    }
+  }).then(res => {
+    if (res.ok) loadReviews();
+    else res.json().then(console.log);
+  });
+}
+
+const form = document.getElementById('review-form');
+if (form) {
+  form.onsubmit = function (e) {
+    e.preventDefault();
+    fetch(`/api/reviews/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCSRFToken()
+      },
+      body: JSON.stringify({
+        content: form.content.value,
+        rating: parseInt(form.rating.value),
+        book: bookId,
+        user: userId
+      })
+    }).then(res => {
+      if (res.ok) loadReviews();
+      else res.json().then(console.log);
+    });
+  };
+}
+
+loadReviews();
+</script>
+{% endblock %}

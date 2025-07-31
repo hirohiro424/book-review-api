@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>📚 BookReview</title>
+</head>
+<body>
+  <header>
+    <nav>
+      <a href="/web/books/">📚 책 목록</a> |
+      <a href="/web/authors/">🖋️ 작가 목록</a> |
+      <a href="/web/reviews/">💬 리뷰 목록</a> |
+      {% if user.is_authenticated %}
+        👋 {{ user.username }} | <a href="{% url 'logout' %}">Logout</a>
+      {% else %}
+        <a href="{% url 'login' %}">Login</a>
+      {% endif %}
+    </nav>
+    <hr>
+  </header>
+
+  {% block content %}
+  {% endblock %}
+</body>
+</html>

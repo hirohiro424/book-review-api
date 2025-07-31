@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>📝 리뷰 상세</h2>
+<div id="review-detail">불러오는 중...</div>
+
+<script>
+const reviewId = {{ review_id }};
+const currentUserId = {{ user.id|default:"null" }};
+const currentUsername = "{{ user.username|default:'Anonymous' }}";
+
+function getCSRFToken() {
+  return document.cookie.split('; ')
+    .find(row => row.startsWith('csrftoken='))
+    ?.split('=')[1];
+}
+
+fetch(`/api/reviews/${reviewId}/`)
+  .then(res => res.json())
+  .then(data => {
+    const bookId = data.book;
+    const userId = data.user;
+    const content = data.content;
+    const rating = data.rating;
+
+    fetch(`/api/books/${bookId}/`).then(res => res.json()).then(bookData => {
+      const container = document.getElementById('review-detail');
+
+      let html = `
+        <b>책 제목:</b> ${bookData.title}<br>
+        <b>작성자 ID:</b> ${userId}<br>
+        <div id="review-content">
+          <b>내용:</b> ${content}<br>
+          <b>평점:</b> ${rating}/5<br>
+        </div>
+      `;
+
+      if (userId == currentUserId) {
+        html += `
+          <button onclick="showEditForm('${content.replace(/'/g, "\\'")}', ${rating}, ${bookId})">✏️ 수정</button>
+          <button onclick="deleteReview(${reviewId})">🗑️ 삭제</button>
+          <div id="edit-form" style="display:none; margin-top:15px;">
+            <h3>리뷰 수정</h3>
+            <form onsubmit="submitEdit(event)">
+              <textarea name="content" rows="4" cols="40">${content}</textarea><br>
+              <input type="number" name="rating" min="1" max="10" value="${rating}"><br>
+              <input type="hidden" name="book" value="${bookId}">
+              <button type="submit">수정 완료</button>
+              <button type="button" onclick="cancelEdit()">취소</button>
+            </form>
+          </div>
+        `;
+      }
+
+      container.innerHTML = html;
+    });
+  });
+
+function deleteReview(id) {
+  fetch(`/api/reviews/${id}/`, {
+    method: 'DELETE',
+    headers: {
+      'X-CSRFToken': getCSRFToken()
+    }
+  }).then(() => {
+    alert('리뷰가 삭제되었습니다.');
+    window.location.href = "/web/reviews/";
+  });
+}
+
+function showEditForm(content, rating, bookId) {
+  document.getElementById('edit-form').style.display = 'block';
+}
+
+function cancelEdit() {
+  document.getElementById('edit-form').style.display = 'none';
+}
+
+function submitEdit(event) {
+  event.preventDefault();
+  const form = event.target;
+  const content = form.content.value;
+  const rating = parseInt(form.rating.value);
+  const book = parseInt(form.book.value);
+
+  fetch(`/api/reviews/${reviewId}/`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': getCSRFToken()
+    },
+    body: JSON.stringify({ content, rating, book })
+  }).then(res => {
+    if (res.ok) {
+      alert('리뷰가 수정되었습니다.');
+      location.reload();
+    } else {
+      res.json().then(console.log);
+    }
+  });
+}
+</script>
+{% endblock %}

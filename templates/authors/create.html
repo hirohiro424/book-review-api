@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>➕ 작가 등록</h2>
+
+<form id="create-author-form">
+  <input type="text" name="name" placeholder="작가 이름 입력" required>
+  <button type="submit">등록</button>
+</form>
+
+<script>
+function getCSRFToken() {
+  return document.cookie.split('; ')
+    .find(row => row.startsWith('csrftoken='))
+    ?.split('=')[1];
+}
+
+document.getElementById('create-author-form').addEventListener('submit', function(e) {
+  e.preventDefault();
+
+  const name = this.name.value;
+
+  fetch('/api/authors/', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': getCSRFToken()
+    },
+    body: JSON.stringify({ name })
+  })
+  .then(res => {
+    if (res.ok) {
+      alert('작가가 등록되었습니다.');
+      window.location.href = '/web/authors/';
+    } else {
+      return res.json().then(data => {
+        alert('등록 실패: ' + JSON.stringify(data));
+      });
+    }
+  });
+});
+</script>
+{% endblock %}

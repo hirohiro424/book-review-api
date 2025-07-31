@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>🖋️ 작가 목록</h2>
+
+<a href="{% url 'author_create' %}">➕ 작가 등록</a>
+<button onclick="loadDashboard()">📊 작가 대시보드</button>
+
+<ul id="author-list">불러오는 중...</ul>
+<div id="pagination"></div>
+
+<!-- Dashboard 영역 -->
+<div id="dashboard" style="margin-top: 30px;"></div>
+
+<script>
+function getCSRFToken() {
+  return document.cookie.split('; ')
+    .find(row => row.startsWith('csrftoken='))
+    ?.split('=')[1];
+}
+
+function deleteAuthor(authorId) {
+  if (!confirm("정말 삭제할까요?")) return;
+
+  fetch(`/api/authors/${authorId}/`, {
+    method: "DELETE",
+    headers: {
+      "X-CSRFToken": getCSRFToken()
+    }
+  }).then(res => {
+    if (res.ok) {
+      alert("삭제 완료");
+      loadAuthors();  // 목록 갱신
+    } else {
+      alert("삭제 실패");
+    }
+  });
+}
+
+function loadAuthors(url = "/api/authors/") {
+  fetch(url)
+    .then(res => res.json())
+    .then(data => {
+      const list = document.getElementById("author-list");
+      list.innerHTML = "";
+
+      data.results.forEach(author => {
+        const li = document.createElement("li");
+        li.innerHTML = `
+          ${author.name}
+          <a href="/web/authors/${author.id}/update/">✏️ 수정</a>
+          <button onclick="deleteAuthor(${author.id})">🗑️ 삭제</button>
+        `;
+        list.appendChild(li);
+      });
+
+      const pagination = document.getElementById("pagination");
+      pagination.innerHTML = "";
+      if (data.previous) {
+        const prev = document.createElement("button");
+        prev.innerText = "◀ 이전";
+        prev.onclick = () => loadAuthors(data.previous);
+        pagination.appendChild(prev);
+      }
+      if (data.next) {
+        const next = document.createElement("button");
+        next.innerText = "다음 ▶";
+        next.onclick = () => loadAuthors(data.next);
+        pagination.appendChild(next);
+      }
+    });
+}
+
+function loadDashboard() {
+  fetch("/api/dashboard/authors/")
+    .then(res => res.json())
+    .then(data => {
+      const dashDiv = document.getElementById("dashboard");
+      let html = "<h3>📊 작가 대시보드</h3>";
+      html += "<table border='1' cellpadding='5'><tr><th>작가 ID</th><th>이름</th><th>책 수</th></tr>";
+
+      data.forEach(author => {
+        html += `<tr>
+          <td>${author.author_id}</td>
+          <td>${author.author_name}</td>
+          <td>${author.book_count}</td>
+        </tr>`;
+      });
+
+      html += "</table>";
+      dashDiv.innerHTML = html;
+    });
+}
+
+loadAuthors();
+</script>
+{% endblock %}

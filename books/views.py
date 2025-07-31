@@ -2,9 +2,16 @@ from rest_framework import viewsets, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.permissions import AllowAny
+
+from django.contrib.auth.views import LogoutView
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
+
 from .models import Book, Review, Author
 from .serializers import BookSerializer, ReviewSerializer, AuthorSerializer
 from .permissions import IsOwnerOrReadOnly
+
 
 class BookViewSet(viewsets.ModelViewSet):
     queryset = Book.objects.all()
@@ -21,7 +28,13 @@ class BookViewSet(viewsets.ModelViewSet):
 class ReviewViewSet(viewsets.ModelViewSet):
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
+
+    def get_permissions(self):
+        if self.action in ['update', 'partial_update', 'destroy']:
+            return [permissions.IsAuthenticated(), IsOwnerOrReadOnly()]
+        elif self.action in ['create']:
+            return [permissions.IsAuthenticated()]
+        return [permissions.AllowAny()]
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
@@ -29,7 +42,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
 class AuthorViewSet(viewsets.ModelViewSet):
     queryset = Author.objects.all()
     serializer_class = AuthorSerializer
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [AllowAny]
 
 class AuthorDashboardAPIView(APIView):
     def get(self, request):
@@ -42,3 +55,8 @@ class AuthorDashboardAPIView(APIView):
             for author in Author.objects.all()
         ]
         return Response(data)
+    
+@method_decorator(csrf_exempt, name='dispatch')
+class LogoutViewAllowGET(LogoutView):
+    def get(self, request, *args, **kwargs):
+        return self.post(request, *args, **kwargs)

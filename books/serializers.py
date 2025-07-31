@@ -7,9 +7,11 @@ class AuthorSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class ReviewSerializer(serializers.ModelSerializer):
+    title = serializers.CharField(source='book.title', read_only=True)
     class Meta:
         model = Review
         fields = '__all__'
+        read_only_fields = ['user']
 
 class BookSerializer(serializers.ModelSerializer):
     avg_rating = serializers.SerializerMethodField()

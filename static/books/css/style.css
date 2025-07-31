@@ -1,0 +1,16 @@
+.container {
+    max-width: 600px;
+    margin: 40px auto;
+    padding: 20px;
+    background: #f9f9f9;
+    border-radius: 8px;
+}
+
+.book-list {
+    list-style-type: none;
+    padding-left: 0;
+}
+
+.book-list li {
+    margin: 10px 0;
+}

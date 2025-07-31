@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>📚 Book List</h2>
+<a href="{% url 'book_create' %}">➕ Add Book</a>
+<ul id="book-list"><li>Loading...</li></ul>
+<div id="pagination"></div>
+
+<script>
+function getCSRFToken() {
+  return document.cookie.split('; ')
+    .find(row => row.startsWith('csrftoken='))
+    ?.split('=')[1];
+}
+
+let nextUrl = '/api/books/';
+
+function loadBooks(url) {
+  fetch(url)
+    .then(res => res.json())
+    .then(data => {
+      const list = document.getElementById('book-list');
+      list.innerHTML = '';
+      data.results.forEach(book => {
+        fetch(`/api/authors/${book.author}/`)
+          .then(res => res.json())
+          .then(authorData => {
+            const li = document.createElement('li');
+            li.innerHTML = `
+              <b>${book.title}</b> (by ${authorData.name})<br>
+              평점: ${book.avg_rating} / 리뷰 수: ${book.review_count}<br>
+              <a href="/web/books/${book.id}/">📖 Detail</a>
+              <a href="/web/books/${book.id}/update/">✏️ Edit</a>
+              <button onclick="deleteBook(${book.id})">🗑️ Delete</button>
+              <hr>
+            `;
+            list.appendChild(li);
+          });
+      });
+      const pagination = document.getElementById('pagination');
+      pagination.innerHTML = '';
+      if (data.previous) {
+        const prev = document.createElement('button');
+        prev.innerText = '◀ 이전';
+        prev.onclick = () => loadBooks(data.previous);
+        pagination.appendChild(prev);
+      }
+      if (data.next) {
+        const next = document.createElement('button');
+        next.innerText = '다음 ▶';
+        next.onclick = () => loadBooks(data.next);
+        pagination.appendChild(next);
+      }
+    });
+}
+
+function deleteBook(id) {
+  fetch(`/api/books/${id}/`, {
+    method: 'DELETE',
+    headers: {
+      'X-CSRFToken': getCSRFToken()
+    }
+  }).then(() => loadBooks(nextUrl));
+}
+
+loadBooks(nextUrl);
+</script>
+{% endblock %}

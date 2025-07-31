@@ -1,11 +1,22 @@
 # books/permissions.py
+from rest_framework import permissions
 
-from rest_framework.permissions import BasePermission, SAFE_METHODS
-
-class IsOwnerOrReadOnly(BasePermission):
+class IsReviewAuthorOrReadOnly(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
-        # 읽기 요청(GET, HEAD, OPTIONS)은 모두 허용
-        if request.method in SAFE_METHODS:
+        # 읽기는 모두 허용
+        if request.method in permissions.SAFE_METHODS:
             return True
-        # 쓰기 요청은 객체 작성자만 허용
+        # 수정/삭제는 작성자만 허용
+        return obj.user == request.user
+    
+
+class IsOwnerOrReadOnly(permissions.BasePermission):
+    """
+    작성자만 수정/삭제 가능하고, 나머지는 읽기 전용 권한
+    """
+    def has_object_permission(self, request, view, obj):
+        # 읽기 요청(GET, HEAD, OPTIONS)은 허용
+        if request.method in permissions.SAFE_METHODS:
+            return True
+        # 그 외(PUT, PATCH, DELETE)는 작성자만 허용
         return obj.user == request.user

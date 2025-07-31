@@ -1,0 +1,125 @@
+
+{% extends 'base.html' %}
+{% block content %}
+<h2>📝 전체 리뷰 목록</h2>
+<ul id="review-list">불러오는 중...</ul>
+<div id="pagination"></div>
+
+<!-- 수정 폼 (숨김 상태로 시작) -->
+<div id="edit-form-container" style="display:none; margin-top:20px;">
+  <h3>✏️ 리뷰 수정</h3>
+  <form id="edit-review-form">
+    <textarea name="content" placeholder="내용"></textarea><br>
+    <input type="number" name="rating" min="1" max="10" placeholder="평점 (1-10)"><br>
+    <input type="hidden" name="reviewId">
+    <button type="submit">수정 완료</button>
+    <button type="button" onclick="cancelEdit()">취소</button>
+  </form>
+</div>
+
+<script>
+    const currentUserId = {{ user.id|default:"null" }};
+    
+    function getCSRFToken() {
+      return document.cookie.split('; ')
+        .find(row => row.startsWith('csrftoken='))
+        ?.split('=')[1];
+    }
+    
+    let nextUrl = '/api/reviews/';
+    
+    function loadReviews(url) {
+      fetch(url)
+        .then(res => res.json())
+        .then(data => {
+          const ul = document.getElementById('review-list');
+          ul.innerHTML = '';
+          data.results.forEach(r => {
+            const li = document.createElement('li');
+            li.innerHTML = `
+              <b>{{ user.username }}</b> on <i>${r.title}</i>:<br>
+              ${r.content} <small>(${r.rating}/100)</small><br>
+              <a href="/web/reviews/${r.id}/">🔍 상세 보기</a>
+            `;
+    
+            if (r.user == currentUserId) {
+              const escapedContent = r.content.replace(/\\/g, '\\\\').replace(/`/g, '\\`');
+              li.innerHTML += `
+                <button onclick="editReview(${r.id}, \`${escapedContent}\`, ${r.rating}, ${r.book})">✏️ 수정</button>
+                <button onclick="deleteReview(${r.id})">🗑️ 삭제</button>
+              `;
+            }
+    
+            ul.appendChild(li);
+          });
+    
+          const pagination = document.getElementById('pagination');
+          pagination.innerHTML = '';
+          if (data.previous) {
+            const prev = document.createElement('button');
+            prev.innerText = '◀ 이전';
+            prev.onclick = () => loadReviews(data.previous);
+            pagination.appendChild(prev);
+          }
+          if (data.next) {
+            const next = document.createElement('button');
+            next.innerText = '다음 ▶';
+            next.onclick = () => loadReviews(data.next);
+            pagination.appendChild(next);
+          }
+        });
+    }
+    
+    function deleteReview(id) {
+      fetch(`/api/reviews/${id}/`, {
+        method: 'DELETE',
+        headers: {
+          'X-CSRFToken': getCSRFToken()
+        }
+      }).then(() => loadReviews(nextUrl));
+    }
+    
+    function editReview(id, content, rating, bookId) {
+      const formContainer = document.getElementById('edit-form-container');
+      formContainer.style.display = 'block';
+      const form = document.getElementById('edit-review-form');
+      form.content.value = content;
+      form.rating.value = rating;
+      form.reviewId.value = id;
+      form.dataset.book = bookId;
+    }
+    
+    function cancelEdit() {
+      document.getElementById('edit-form-container').style.display = 'none';
+    }
+    
+    document.getElementById('edit-review-form').onsubmit = function (e) {
+      e.preventDefault();
+      const form = e.target;
+      const id = form.reviewId.value;
+    
+      fetch(`/api/reviews/${id}/`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': getCSRFToken()
+        },
+        body: JSON.stringify({
+          content: form.content.value,
+          rating: parseInt(form.rating.value),
+          book: parseInt(form.dataset.book)
+        })
+      }).then(res => {
+        if (res.ok) {
+          cancelEdit();
+          loadReviews(nextUrl);
+        } else {
+          res.json().then(console.log);
+        }
+      });
+    };
+    
+    loadReviews(nextUrl);
+    </script>
+    
+{% endblock %}

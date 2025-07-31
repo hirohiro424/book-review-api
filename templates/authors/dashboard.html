@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block title %}Author Dashboard{% endblock %}
+{% block content %}
+<h1>📊 Author Dashboard</h1>
+<table border="1">
+  <tr><th>ID</th><th>Name</th><th>Book Count</th></tr>
+  {% for author in authors %}
+    <tr>
+      <td>{{ author.author_id }}</td>
+      <td>{{ author.author_name }}</td>
+      <td>{{ author.book_count }}</td>
+    </tr>
+  {% endfor %}
+</table>
+{% endblock %}

@@ -70,6 +70,12 @@ TEMPLATES = [
     },
 ]
 
+REST_FRAMEWORK = {
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 10,  # 한 페이지당 아이템 수
+}
+
+
 WSGI_APPLICATION = 'config.wsgi.application'
 
 

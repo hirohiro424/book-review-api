@@ -1,5 +1,3 @@
-# reviews/views.py
-
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from .models import Review
@@ -11,5 +9,4 @@ class ReviewViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticatedOrReadOnly]
 
     def perform_create(self, serializer):
-        # 리뷰 작성 시 로그인한 유저를 자동으로 연결
         serializer.save(user=self.request.user)
